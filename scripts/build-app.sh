@@ -40,6 +40,7 @@ for bundle in "$binary_path"/*.bundle; do
 done
 cp Sources/LabRouteCore/Resources/route-packs.json "$app_path/Contents/Resources/"
 cp Resources/Info.plist "$app_path/Contents/Info.plist"
+cp Resources/AppIcon.icns "$app_path/Contents/Resources/"
 if [[ "$configuration" == debug ]]; then
   /usr/libexec/PlistBuddy -c 'Set :CFBundleIdentifier org.labroute.development' "$app_path/Contents/Info.plist"
   /usr/libexec/PlistBuddy -c 'Set :CFBundleDisplayName LabRoute Development' "$app_path/Contents/Info.plist"

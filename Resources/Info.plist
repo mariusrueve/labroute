@@ -4,6 +4,7 @@
 <key>CFBundleIdentifier</key><string>org.labroute.experimental</string>
 <key>CFBundleName</key><string>LabRoute</string>
 <key>CFBundleDisplayName</key><string>LabRoute</string>
+<key>CFBundleIconFile</key><string>AppIcon</string>
 <key>CFBundleExecutable</key><string>LabRouteApp</string>
 <key>CFBundlePackageType</key><string>APPL</string>
 <key>CFBundleShortVersionString</key><string>1.0.0</string>

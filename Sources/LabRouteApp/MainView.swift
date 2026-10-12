@@ -9,8 +9,10 @@ struct MainView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Label("LabRoute", systemImage: "point.3.connected.trianglepath.dotted")
-                .font(.largeTitle.bold())
+            HStack(spacing: 12) {
+                Image(nsImage: NSApp.applicationIconImage).resizable().frame(width: 48, height: 48)
+                Text("LabRoute").font(.largeTitle.bold())
+            }
             Text(model.status).font(.headline).fixedSize(horizontal: false, vertical: true)
             HStack {
                 Button("Connect") { model.connect() }

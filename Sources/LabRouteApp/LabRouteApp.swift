@@ -6,7 +6,7 @@ import LabRouteServices
 struct LabRouteApp: App {
     @StateObject private var model = ApplicationModel()
     var body: some Scene {
-        MenuBarExtra("LabRoute", systemImage: menuIcon) {
+        MenuBarExtra {
             Text(model.status)
             if let error = model.error { Text(error).lineLimit(3) }
             Divider()
@@ -19,6 +19,8 @@ struct LabRouteApp: App {
             Divider()
             OpenWindowButton()
             Button("Disconnect and Quit") { model.quit() }.disabled(model.busy)
+        } label: {
+            Image(nsImage: MenuBarIcon.image(for: menuState))
         }
         Window("LabRoute", id: "main") {
             ScrollView { MainView(model: model).padding(24) }
@@ -36,11 +38,11 @@ struct LabRouteApp: App {
         }
     }
 
-    private var menuIcon: String {
-        if model.routingState == .active { return "network.badge.shield.half.filled" }
-        if model.busy { return "arrow.triangle.2.circlepath" }
-        if model.routingState == .degraded || model.needsRecovery || model.error != nil { return "exclamationmark.triangle" }
-        return "network"
+    private var menuState: MenuBarIcon.State {
+        if model.busy { return .connecting }
+        if model.routingState == .active { return .connected }
+        if model.routingState == .degraded || model.needsRecovery || model.error != nil { return .attention }
+        return .disconnected
     }
 }
 
@@ -51,5 +53,30 @@ private struct OpenWindowButton: View {
             openWindow(id: "main")
             NSApp.activate(ignoringOtherApps: true)
         }
+    }
+}
+
+/// Monochrome template images in the style of the system menu bar: one route glyph
+/// that fills in when connected and dims while connecting.
+enum MenuBarIcon {
+    enum State { case disconnected, connecting, connected, attention }
+
+    static func image(for state: State) -> NSImage {
+        let (name, alpha, label): (String, CGFloat, String) = switch state {
+        case .disconnected: ("point.bottomleft.forward.to.point.topright.scurvepath", 1, "LabRoute, disconnected")
+        case .connecting: ("point.bottomleft.forward.to.point.topright.scurvepath", 0.4, "LabRoute, connecting")
+        case .connected: ("point.bottomleft.forward.to.point.topright.scurvepath.fill", 1, "LabRoute, connected")
+        case .attention: ("exclamationmark.triangle", 1, "LabRoute, needs attention")
+        }
+        let configuration = NSImage.SymbolConfiguration(pointSize: 14, weight: .medium)
+        guard let symbol = NSImage(systemSymbolName: name, accessibilityDescription: label)?.withSymbolConfiguration(configuration) else {
+            return NSImage()
+        }
+        let image = alpha < 1 ? NSImage(size: symbol.size, flipped: false) { rect in
+            symbol.draw(in: rect, from: .zero, operation: .sourceOver, fraction: alpha); return true
+        } : symbol
+        image.isTemplate = true
+        image.accessibilityDescription = label
+        return image
     }
 }
