@@ -1,0 +1,20 @@
+name: CI
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - run: swift --version
+      - name: Build
+        run: swift build
+      - name: Test
+        run: bash scripts/test.sh
+      - name: Test optimized build (catches release-only miscompiles)
+        run: bash scripts/test.sh -c release -Xswiftc -enable-testing -Xswiftc -DDEBUG
+      - name: Build app bundle
+        run: bash scripts/build-app.sh release
