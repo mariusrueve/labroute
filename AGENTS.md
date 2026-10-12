@@ -1,6 +1,6 @@
 # LabRoute contributor notes
 
-Personal macOS menu-bar tool: routes selected domains (lab intranet, journal publishers) through an SSH SOCKS tunnel via a loopback PAC file. Target: Safari on macOS 15+. Keep it small and working; no process/beta/release-gate paperwork.
+Personal macOS menu-bar tool: routes selected domains (lab intranet, journal publishers) through an SSH SOCKS tunnel via a loopback PAC file. Target: Safari, Chrome and Brave on macOS 15+. The PAC directive `SOCKS5 h:p; SOCKS h:p` is deliberate: CFNetwork reads it as SOCKS5, Chromium uses SOCKS5 with remote DNS. Keep it small and working; no process/beta/release-gate paperwork.
 
 ## Layout
 

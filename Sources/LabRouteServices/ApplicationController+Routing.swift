@@ -181,7 +181,7 @@ import LabRouteCore
         } else if result.valid && tunnelState == .connected {
             routingState = .active; routingReason = nil
             if routingValidationOwnsError { error = nil }
-            status = "Connected · restart Safari if pages still look locked"
+            status = "Connected · restart your browser if pages still look locked"
         } else {
             routingState = .degraded; routingReason = result.reason ?? "sshUnavailable"
             status = "Routing degraded"

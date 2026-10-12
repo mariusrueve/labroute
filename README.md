@@ -3,7 +3,7 @@
 A small native macOS menu-bar app that sends **selected websites** through an SSH connection to your lab or university server. You can reach internal lab pages and use your institution's journal subscriptions without installing a full VPN client.
 
 ```text
-Selected domain   → Safari → local PAC file → SSH SOCKS tunnel (/usr/bin/ssh -D) → lab server → website
+Selected domain   → browser → local PAC file → SSH SOCKS tunnel (/usr/bin/ssh -D) → lab server → website
 Everything else   → DIRECT (your normal connection)
 ```
 
@@ -15,7 +15,7 @@ Everything else   → DIRECT (your normal connection)
 ## Requirements
 
 - macOS 15 or newer, tested on Apple Silicon.
-- Safari. Other browsers may ignore or partly honour the system PAC settings.
+- Safari, Google Chrome or Brave. They all follow the macOS system proxy settings, which LabRoute manages. Firefox works only if you set *Settings → Network Settings → Use system proxy settings*.
 - An SSH account on a server inside your institution's network.
 - Apple's Command Line Tools to build it: `xcode-select --install`. Full Xcode is not needed.
 
@@ -44,8 +44,8 @@ To update, choose **Disconnect and Quit** from the menu, then `git pull` and run
 ## Daily use
 
 - Click the menu-bar icon → **Connect**. macOS asks for your admin password to change the proxy settings, and the Keychain may ask for the key passphrase.
-- When the icon shows a shield, you're connected. **Quit and reopen Safari once** (⌘Q). Safari keeps its existing connections to sites and won't route them through LabRoute until it restarts. Then open papers and internal pages as usual.
-- You can add or toggle domains while connected. Reload the page; if Safari keeps using the old route, restart Safari.
+- When the icon shows a shield, you're connected. **Quit and reopen your browser once** (⌘Q). Browsers keep their existing connections to sites and won't route them through LabRoute until they restart. Then open papers and internal pages as usual.
+- You can add or toggle domains while connected. Reload the page; if the browser keeps using the old route, restart it.
 - **Disconnect** restores your previous proxy settings. **Disconnect and Quit** (⌘Q) does the same and exits.
 - Optional: *Preferences → Launch at login* and *Connect automatically*.
 
@@ -63,13 +63,13 @@ A command-line client is bundled for scripting the running app:
 - **"Existing proxy or PAC settings conflict"**: the selected network service already has a proxy configured. LabRoute refuses to overwrite it. Remove it in System Settings → Network → *service* → Details → Proxies, or select another service.
 - **"Restoration record found"** after a crash or forced quit: open LabRoute and click **Disconnect** (restores your settings) or **Reconnect Recorded Session**.
 - **"Network settings changed outside LabRoute"**: something else edited the proxy settings while you were connected. LabRoute won't overwrite them. Check System Settings → Network → Proxies and turn off *Automatic proxy configuration* if it still points to `http://127.0.0.1:…/proxy.pac`, then click Disconnect again.
-- **Page still paywalled**: restart Safari first. Publisher sites show your institution's name (e.g. "Access provided by …") when routing works. Old archive volumes may not be covered by your library's licence. Also check that the publisher's domain is enabled. Some sites load content or log-in from a second domain, which you can add under *Custom*. Then reload or restart Safari.
+- **Page still paywalled**: restart the browser first. Publisher sites show your institution's name (e.g. "Access provided by …") when routing works. Old archive volumes may not be covered by your library's licence. Also check that the publisher's domain is enabled. Some sites load content or log-in from a second domain, which you can add under *Custom*. Then reload or restart Safari.
 - Check what macOS currently uses with `scutil --proxy`.
 
 ## Limitations
 
-- This is a best-effort access helper, **not a VPN or a privacy tool**. Only the listed domains are tunnelled. If the local PAC file becomes unavailable, Safari may fall back to a direct connection.
-- Only applications that honour the macOS system proxy (PAC) settings are covered, mainly Safari. Other tools need their own SOCKS5 setting (`127.0.0.1:1080` while connected).
+- This is a best-effort access helper, **not a VPN or a privacy tool**. Only the listed domains are tunnelled. If the local PAC file becomes unavailable, the browser may fall back to a direct connection.
+- Only applications that honour the macOS system proxy (PAC) settings are covered: Safari, Chrome, Brave and other Chromium browsers that use system settings. A browser extension or policy that sets its own proxy overrides LabRoute. Other tools need their own SOCKS5 setting (`127.0.0.1:1080` while connected).
 - Each user needs their own SSH account and must follow their institution's terms of use for licensed content.
 
 ## Development

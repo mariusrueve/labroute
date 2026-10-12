@@ -42,7 +42,7 @@ struct MainView: View {
                 Button("Add") { model.addRoute() }
             }.disabled(routesLocked)
             if model.serving {
-                Text("Changes apply immediately. Reload the page, or restart Safari if it keeps the old route.")
+                Text("Changes apply immediately. Reload the page, or restart the browser if it keeps the old route.")
                     .font(.caption).foregroundStyle(.secondary)
             }
             ForEach(model.packs) { pack in

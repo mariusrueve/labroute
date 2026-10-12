@@ -59,7 +59,7 @@ func invalidDomain(input: String) {
     let function = try #require(context.objectForKeyedSubscript("FindProxyForURL"))
     for host in ["example.com", "a.example.com", "EXAMPLE.COM.", "notexample.com", "example.com.evil.test", "another.test", "unmatched.test"] {
         let actual = function.call(withArguments: ["https://\(host)/path?query=secret", host])?.toString()
-        #expect(actual == (routes.matches(host: host) ? "SOCKS 127.0.0.1:32123" : "DIRECT"))
+        #expect(actual == (routes.matches(host: host) ? "SOCKS5 127.0.0.1:32123; SOCKS 127.0.0.1:32123" : "DIRECT"))
     }
     #expect(!script.contains("; DIRECT"))
     #expect(!script.contains("dnsResolve"))
@@ -116,7 +116,7 @@ func invalidDomain(input: String) {
 }
 
 @Test func experimentalPACDirectiveParserMatrix() throws {
-    // Test-only scripts: do not change the working production directive before browser acceptance.
+    // Documents how CFNetwork (Safari) parses each candidate directive.
     for directive in ["SOCKS 127.0.0.1:32123", "SOCKS5 127.0.0.1:32123", "SOCKS5 127.0.0.1:32123; SOCKS 127.0.0.1:32123"] {
         let script = "function FindProxyForURL(url, host) { return \"\(directive)\"; }"
         var error: Unmanaged<CFError>?

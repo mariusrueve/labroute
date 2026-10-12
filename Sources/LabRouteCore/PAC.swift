@@ -6,7 +6,8 @@ public enum PACGenerator {
         let data = try JSONEncoder().encode(routes.domains.map(\.value))
         let domains = String(decoding: data, as: UTF8.self)
         return """
-        // macOS PAC uses SOCKS for SOCKS version 5 (SOCKS5 is not parsed).
+        // Safari/CFNetwork ignores the SOCKS5 entry and reads SOCKS as SOCKS version 5.
+        // Chrome/Brave use the SOCKS5 entry (remote DNS); SOCKS there would mean SOCKS4.
         // PAC availability is not a fail-closed guarantee.
         function FindProxyForURL(url, host) {
           host = host.toLowerCase().replace(/\\.$/, "");
@@ -14,7 +15,7 @@ public enum PACGenerator {
           for (var i = 0; i < domains.length; i++) {
             var domain = domains[i];
             if (host === domain || host.slice(-(domain.length + 1)) === "." + domain) {
-              return "SOCKS 127.0.0.1:\(socksPort)";
+              return "SOCKS5 127.0.0.1:\(socksPort); SOCKS 127.0.0.1:\(socksPort)";
             }
           }
           return "DIRECT";
