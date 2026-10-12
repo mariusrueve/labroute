@@ -1,4 +1,4 @@
-// Draws the LabRoute app icon and writes Resources/AppIcon.icns.
+// Draws the LabRoute app icon and writes Resources/AppIcon.icns (app) and AppIcon.png (README).
 // Usage: swift scripts/make-icon.swift [output-dir-for-preview-png]
 import AppKit
 
@@ -86,6 +86,9 @@ for points in [16, 32, 128, 256, 512] {
             .write(to: iconset.appendingPathComponent(name))
     }
 }
+// PNG for the README.
+try drawIcon(size: 256).representation(using: .png, properties: [:])!
+    .write(to: root.appendingPathComponent("Resources/AppIcon.png"))
 if CommandLine.arguments.count > 1 {
     try drawIcon(size: 1024).representation(using: .png, properties: [:])!
         .write(to: URL(fileURLWithPath: CommandLine.arguments[1]).appendingPathComponent("AppIcon-preview.png"))
@@ -96,4 +99,4 @@ iconutil.arguments = ["-c", "icns", iconset.path, "-o", root.appendingPathCompon
 try iconutil.run()
 iconutil.waitUntilExit()
 guard iconutil.terminationStatus == 0 else { fatalError("iconutil failed") }
-print("Wrote Resources/AppIcon.icns")
+print("Wrote Resources/AppIcon.icns and Resources/AppIcon.png")

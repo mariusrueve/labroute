@@ -1,11 +1,48 @@
+<p align="center"><img src="Resources/AppIcon.png" width="128" alt="LabRoute icon"></p>
+
 # LabRoute
 
-A small native macOS menu-bar app that sends **selected websites** through an SSH connection to your lab or university server. You can reach internal lab pages and use your institution's journal subscriptions without installing a full VPN client.
+A small native macOS menu-bar app that sends **selected websites** through an SSH connection to your lab or university server. You can reach internal lab pages and use your institution's journal subscriptions from anywhere, without installing a full VPN client.
+
+## What it does
+
+You're at home, at a conference or in a café and open a paper. Normally the publisher sees your home IP address and shows a paywall. With LabRoute connected, requests for journal and lab websites take a detour through your lab server. The publisher then sees a university address and grants your institution's access. Everything else goes out over your normal connection, untouched.
+
+```mermaid
+flowchart LR
+    subgraph mac["💻 Your Mac, anywhere"]
+        B["Safari · Chrome · Brave"]
+        L(["LabRoute<br/>checks the domain"])
+    end
+    S["🏛️ Lab server<br/>inside the university network"]
+    J["📚 Journal publishers<br/>sciencedirect.com, nature.com, …"]
+    I["🔒 Internal lab sites<br/>wiki, instruments, intranet"]
+    W["🌍 All other websites<br/>google.com, youtube.com, …"]
+
+    B --> L
+    L ==>|"journal or lab domain:<br/>encrypted SSH tunnel"| S
+    S -->|"university IP:<br/>full-text access"| J
+    S --> I
+    L -.->|"any other domain:<br/>direct, unchanged"| W
+```
+
+| | Without LabRoute | With LabRoute |
+|---|---|---|
+| Paper on `sciencedirect.com` | Paywall: *"Purchase PDF"* | *"Access provided by your university"*, PDF opens |
+| Internal lab page | Not reachable off campus | Opens normally |
+| All other websites | Your connection | Your connection (not slowed down or tunnelled) |
+| What you need | The institution's full VPN client, routing everything | An SSH account on a lab server |
+
+### How it works
 
 ```text
 Selected domain   → browser → local PAC file → SSH SOCKS tunnel (/usr/bin/ssh -D) → lab server → website
 Everything else   → DIRECT (your normal connection)
 ```
+
+LabRoute starts `ssh -D` (a SOCKS proxy) to your lab server and serves a small proxy auto-config (PAC) file on `127.0.0.1`. It points macOS's proxy setting at that file. Browsers ask the PAC file for each website, and only listed domains are sent through the tunnel.
+
+### Features
 
 - Native Swift/SwiftUI, no dependencies, no background daemon, no kernel or network extension.
 - Uses the system `/usr/bin/ssh` with a dedicated encrypted key stored in your Keychain.
