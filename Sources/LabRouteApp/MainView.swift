@@ -95,8 +95,8 @@ struct MainView: View {
                 }.disabled(model.busy || model.serving || model.needsRecovery || !model.ownsRuntime)
             }
             DisclosureGroup("Preferences") {
-                Toggle("Connect automatically when LabRoute opens", isOn: Binding(get: { model.connectOnLaunch }, set: model.setAutoConnect))
-                Toggle("Launch at login", isOn: Binding(get: { model.loginEnabled }, set: model.setLogin))
+                Toggle("Connect automatically when LabRoute opens", isOn: Binding(get: { model.connectOnLaunch }, set: { model.setAutoConnect($0) }))
+                Toggle("Launch at login", isOn: Binding(get: { model.loginEnabled }, set: { model.setLogin($0) }))
                 Text(model.loginStatus).font(.caption).foregroundStyle(.secondary)
             }.disabled(model.busy)
             DisclosureGroup("Diagnostics (this session only)") {
