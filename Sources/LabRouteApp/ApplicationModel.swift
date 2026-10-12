@@ -33,7 +33,9 @@ final class ApplicationModel: ApplicationController {
         }
         #endif
         guard ownsRuntime else { Task { NSApp.terminate(nil) }; return }
-        terminate = { NSApp.terminate(nil) }
+        terminate = { AppTermination.finish(allowed: true) }
+        quitFailed = { AppTermination.finish(allowed: false) }
+        AppTermination.model = self
         powerObservers = [
             NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.willSleepNotification, object: nil, queue: .main) { [weak self] _ in
                 Task { @MainActor in self?.handleSleep() }

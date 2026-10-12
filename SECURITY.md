@@ -14,7 +14,7 @@ If the app is gone but proxy settings remain: System Settings → Network → *s
 
 ## Uninstall
 
-Disconnect and Quit, then delete `~/Applications/LabRoute.app` and `~/Library/Application Support/LabRoute/`. Optionally remove the `org.labroute.keys` Keychain item and the `LabRoute` line from the server's `~/.ssh/authorized_keys`.
+With Homebrew: `brew uninstall --cask --zap labroute`. From source: quit LabRoute, then delete `~/Applications/LabRoute.app` and `~/Library/Application Support/LabRoute/`. Optionally remove the `org.labroute.keys` Keychain item and the `LabRoute` line from the server's `~/.ssh/authorized_keys`.
 
 ## Reporting
 

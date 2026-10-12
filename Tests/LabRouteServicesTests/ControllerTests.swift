@@ -198,11 +198,12 @@ private func waitSynchronously(_ semaphore: DispatchSemaphore) { semaphore.wait(
     let (fixture, controller) = try fixture()
     defer { controller.shutdownControl(); try? FileManager.default.removeItem(at: fixture.root) }
     var terminated = false; controller.terminate = { terminated = true }
+    var quitFailed = false; controller.quitFailed = { quitFailed = true }
     #expect(try await settled(controller, controller.execute(ControlRequest(.connect))).success)
     let journal = try ProxyTransaction(journalURL: fixture.root.appendingPathComponent("journal.json")).record()
     fixture.proxy.current["fixture-wifi"] = try ProxySnapshot(enabled: true, dictionary: ["HTTPEnable": 1])
     #expect(try await settled(controller, controller.execute(ControlRequest(.quit))).operation?.phase == .failed)
-    #expect(!terminated && !controller.shutdownRequested && controller.needsRecovery)
+    #expect(!terminated && quitFailed && !controller.shutdownRequested && controller.needsRecovery)
     fixture.proxy.current = try #require(journal).original
     #expect(try await settled(controller, controller.execute(ControlRequest(.disconnect))).success)
 }
@@ -245,4 +246,16 @@ private func waitSynchronously(_ semaphore: DispatchSemaphore) { semaphore.wait(
     #expect(!RouteSet(packs: controller.packs).domains.isEmpty)
     #expect(controller.routingState == .active)
     #expect(try await settled(controller, controller.execute(ControlRequest(.disconnect))).success)
+}
+@Test @MainActor func quitWhileConnectedRestoresBeforeTerminating() async throws {
+    let (fixture, controller) = try fixture()
+    defer { controller.shutdownControl(); try? FileManager.default.removeItem(at: fixture.root) }
+    var terminated = false; controller.terminate = { terminated = true }
+    #expect(try await settled(controller, controller.execute(ControlRequest(.connect))).success)
+    let original = try #require(try ProxyTransaction(journalURL: fixture.root.appendingPathComponent("journal.json")).record()).original
+    controller.quit()
+    for _ in 0..<1000 { if terminated { break }; try await Task.sleep(for: .milliseconds(2)) }
+    #expect(terminated && controller.isShuttingDown)
+    #expect(fixture.proxy.current == original)
+    #expect(!FileManager.default.fileExists(atPath: fixture.root.appendingPathComponent("journal.json").path))
 }

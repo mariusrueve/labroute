@@ -57,12 +57,29 @@ LabRoute starts `ssh -D` (a SOCKS proxy) to your lab server and serves a small p
 
 ## Requirements
 
-- macOS 15 or newer, tested on Apple Silicon.
+- macOS 15 or newer. Tested on Apple Silicon; the app is also built for Intel but not tested there.
 - Safari, Google Chrome or Brave. They all follow the macOS system proxy settings, which LabRoute manages. Firefox works only if you set *Settings → Network Settings → Use system proxy settings*.
 - An SSH account on a server inside your institution's network.
-- Apple's Command Line Tools to build it: `xcode-select --install`. Full Xcode is not needed.
 
 ## Install
+
+### With Homebrew (recommended)
+
+```bash
+brew install --cask mariusrueve/tap/labroute
+open /Applications/LabRoute.app
+```
+
+LabRoute is ad-hoc signed, not notarized by Apple. The first time you open it, macOS blocks it: go to **System Settings → Privacy & Security** and click **Open Anyway** once.
+
+This also puts the `labroute` command-line tool on your PATH.
+
+- **Update:** `brew upgrade --cask labroute`. macOS may then ask once whether LabRoute may use its Keychain item; choose **Always Allow**.
+- **Uninstall:** `brew uninstall --cask labroute`. This disconnects first, so your proxy settings are restored. Add `--zap` to also delete LabRoute's settings and SSH key.
+
+### From source
+
+Needs Apple's Command Line Tools (`xcode-select --install`) or Xcode.
 
 ```bash
 git clone https://github.com/mariusrueve/labroute.git
@@ -71,9 +88,7 @@ bash scripts/install.sh
 open ~/Applications/LabRoute.app
 ```
 
-The app is ad-hoc signed, not notarized. If macOS blocks it, allow it once under **System Settings → Privacy & Security → Open Anyway**.
-
-To update, choose **Disconnect and Quit** from the menu, then `git pull` and run `bash scripts/install.sh` again. After an update, macOS may ask once whether LabRoute may use its Keychain item; choose **Always Allow**.
+To update, quit LabRoute, then `git pull` and run `bash scripts/install.sh` again. Use either Homebrew or the source install, not both. If you switch to Homebrew, delete `~/Applications/LabRoute.app`; your settings are kept.
 
 ## First-time setup
 
@@ -89,16 +104,16 @@ To update, choose **Disconnect and Quit** from the menu, then `git pull` and run
 - Click the menu-bar icon → **Connect**. macOS asks for your admin password to change the proxy settings, and the Keychain may ask for the key passphrase.
 - When the icon shows a shield, you're connected. **Quit and reopen your browser once** (⌘Q). Browsers keep their existing connections to sites and won't route them through LabRoute until they restart. Then open papers and internal pages as usual.
 - You can add or toggle domains while connected. Reload the page; if the browser keeps using the old route, restart it.
-- **Disconnect** restores your previous proxy settings. **Disconnect and Quit** (⌘Q) does the same and exits.
+- **Disconnect** restores your previous proxy settings. Quitting LabRoute in any way (⌘Q, the menu, logging out, shutting down) disconnects and restores them first.
 - Optional: *Preferences → Launch at login* and *Connect automatically*.
 
-A command-line client is bundled for scripting the running app:
+A command-line client is bundled for scripting the running app. Homebrew puts it on your PATH; for a source install it's at `~/Applications/LabRoute.app/Contents/MacOS/labroute`.
 
 ```bash
-~/Applications/LabRoute.app/Contents/MacOS/labroute status --json
-~/Applications/LabRoute.app/Contents/MacOS/labroute connect --wait
-~/Applications/LabRoute.app/Contents/MacOS/labroute route add intranet.uni-example.de
-~/Applications/LabRoute.app/Contents/MacOS/labroute disconnect --wait
+labroute status --json
+labroute connect --wait
+labroute route add intranet.uni-example.de
+labroute disconnect --wait
 ```
 
 ## Troubleshooting

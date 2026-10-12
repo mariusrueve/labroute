@@ -226,7 +226,7 @@ import LabRouteCore
                 routingState = .degraded
                 routingReason = "restorationIncomplete"
                 status = "Disconnect needs attention · recovery remains available"
-                if quitAfter { shutdownRequested = false; quitAwaitingDelivery = false }
+                if quitAfter { shutdownRequested = false; quitAwaitingDelivery = false; quitFailed() }
             }
         }
     }

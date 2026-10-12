@@ -3,16 +3,20 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 configuration="${1:-debug}"
 if [[ "$configuration" != debug && "$configuration" != release ]]; then
-  echo 'Usage: scripts/build-app.sh [debug|release] [--universal]' >&2
+  echo 'Usage: scripts/build-app.sh [debug|release] [--universal] [--version X.Y.Z]' >&2
   exit 1
 fi
 build_arguments=(-c "$configuration")
 shift || true
 output_path=""
+version=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --universal) build_arguments+=(--arch arm64 --arch x86_64); shift ;;
     --output) [[ $# -ge 2 ]] || exit 2; output_path="$2"; shift 2 ;;
+    --version)
+      [[ $# -ge 2 && "$2" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo 'Version must look like 1.2.3' >&2; exit 2; }
+      version="$2"; shift 2 ;;
     *) echo 'Unknown build option' >&2; exit 2 ;;
   esac
 done
@@ -41,6 +45,10 @@ done
 cp Sources/LabRouteCore/Resources/route-packs.json "$app_path/Contents/Resources/"
 cp Resources/Info.plist "$app_path/Contents/Info.plist"
 cp Resources/AppIcon.icns "$app_path/Contents/Resources/"
+if [[ -n "$version" ]]; then
+  /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $version" "$app_path/Contents/Info.plist"
+  /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $version" "$app_path/Contents/Info.plist"
+fi
 if [[ "$configuration" == debug ]]; then
   /usr/libexec/PlistBuddy -c 'Set :CFBundleIdentifier org.labroute.development' "$app_path/Contents/Info.plist"
   /usr/libexec/PlistBuddy -c 'Set :CFBundleDisplayName LabRoute Development' "$app_path/Contents/Info.plist"

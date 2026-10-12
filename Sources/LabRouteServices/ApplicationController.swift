@@ -45,6 +45,9 @@ open class ApplicationController: ObservableObject {
     let store: ConfigurationStore
     let environment: ControllerEnvironment
     public var terminate: () -> Void = {}
+    /// Called when a quit request could not restore settings; the app stays running.
+    public var quitFailed: () -> Void = {}
+    public var isShuttingDown: Bool { shutdownStarted }
     public var prompt: (@MainActor @Sendable (CredentialQuestion) async -> String?)?
     @Published public var routingState: RoutingState = .inactive
     @Published public var humanInteraction: String?

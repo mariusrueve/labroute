@@ -4,6 +4,7 @@ import LabRouteServices
 
 @main
 struct LabRouteApp: App {
+    @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
     @StateObject private var model = ApplicationModel()
     var body: some Scene {
         MenuBarExtra {
@@ -78,5 +79,41 @@ enum MenuBarIcon {
         image.isTemplate = true
         image.accessibilityDescription = label
         return image
+    }
+}
+
+/// Routes every quit (menu, ⌘Q, logout, `brew uninstall`, Activity Monitor's Quit)
+/// through Disconnect, so proxy settings are restored before the process exits.
+final class AppDelegate: NSObject, NSApplicationDelegate {
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        AppTermination.request()
+    }
+}
+
+@MainActor enum AppTermination {
+    static weak var model: ApplicationModel?
+    private static var awaitingReply = false
+
+    static func request() -> NSApplication.TerminateReply {
+        guard let model, model.ownsRuntime, !model.isShuttingDown, !awaitingReply else { return .terminateNow }
+        awaitingReply = true
+        Task { @MainActor in
+            if model.busy {
+                model.cancelSetup()
+                for _ in 0..<100 where model.busy { try? await Task.sleep(for: .milliseconds(100)) }
+            }
+            if !model.execute(ControlRequest(.quit)).success { finish(allowed: false) }
+        }
+        return .terminateLater
+    }
+
+    /// Called by the controller once Disconnect finished (or failed).
+    static func finish(allowed: Bool) {
+        if awaitingReply {
+            awaitingReply = false
+            NSApp.reply(toApplicationShouldTerminate: allowed)
+        } else if allowed {
+            NSApp.terminate(nil)
+        }
     }
 }
