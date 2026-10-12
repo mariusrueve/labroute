@@ -33,6 +33,12 @@ flowchart LR
 | All other websites | Your connection | Your connection (not slowed down or tunnelled) |
 | What you need | The institution's full VPN client, routing everything | An SSH account on a lab server |
 
+### The app
+
+LabRoute lives in the menu bar. Its window lets you connect, choose which domains are routed and set up SSH:
+
+<p align="center"><img src="docs/screenshot.png" width="560" alt="LabRoute window while connected, showing routed domain groups and network services"></p>
+
 ### How it works
 
 ```text

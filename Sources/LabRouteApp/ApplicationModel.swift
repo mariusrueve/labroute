@@ -21,6 +21,17 @@ final class ApplicationModel: ApplicationController {
         }
         super.init(environment: selected, startIPC: startIPC)
         sshExpanded = configuredConnection == nil
+        #if DEBUG
+        // Development aid for README screenshots: the app renders its own window,
+        // which needs no Screen Recording permission.
+        if let index = CommandLine.arguments.firstIndex(of: "--snapshot"), index + 1 < CommandLine.arguments.count {
+            let path = CommandLine.arguments[index + 1]
+            Task { [weak self] in
+                try? await Task.sleep(for: .seconds(6))
+                self?.snapshotWindow(to: URL(fileURLWithPath: path))
+            }
+        }
+        #endif
         guard ownsRuntime else { Task { NSApp.terminate(nil) }; return }
         terminate = { NSApp.terminate(nil) }
         powerObservers = [
@@ -32,6 +43,15 @@ final class ApplicationModel: ApplicationController {
             }
         ]
     }
+    #if DEBUG
+    private func snapshotWindow(to url: URL) {
+        guard let frame = NSApp.windows.first(where: { $0.isVisible && $0.title == "LabRoute" })?.contentView?.superview,
+              let rep = frame.bitmapImageRepForCachingDisplay(in: frame.bounds) else { return }
+        frame.cacheDisplay(in: frame.bounds, to: rep)
+        try? rep.representation(using: .png, properties: [:])?.write(to: url)
+    }
+    #endif
+
     func chooseKey() {
         let panel = NSOpenPanel()
         panel.canChooseDirectories = false; panel.allowsMultipleSelection = false

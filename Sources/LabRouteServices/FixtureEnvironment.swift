@@ -73,7 +73,7 @@ public final class FixturePreferences: ProxyPreferences {
         var result = ControllerEnvironment(configuration: root.appendingPathComponent("configuration.json"), journal: root.appendingPathComponent("journal.json"),
             socket: root.appendingPathComponent("control.sock"), helper: root.appendingPathComponent("no-helper"), tunnel: tunnel,
             secrets: FixtureSecrets(), preferences: { [self] _ in proxy },
-            services: { [self] in [NetworkService(id: "fixture-wifi", name: "Synthetic Wi-Fi", locationID: "fixture-location", isPrimary: activeServices.contains("fixture-wifi"), kind: "IEEE80211")] },
+            services: { [self] in [NetworkService(id: "fixture-wifi", name: "Wi-Fi", locationID: "fixture-location", isPrimary: activeServices.contains("fixture-wifi"), kind: "IEEE80211")] },
             primary: { [self] in activeServices }, effectivePAC: { [self] in try? proxy.current["fixture-wifi"]?.dictionary()?["ProxyAutoConfigURLString"] as? String },
             loginStatus: { (false, "Disabled in fixtures") }, setLogin: { _ in throw RuntimeError.message("Login registration is disabled in fixtures") },
             onboarding: SSHOnboarding(runner: NoProcesses(), secrets: FixtureSecrets()))

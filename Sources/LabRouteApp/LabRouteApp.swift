@@ -27,9 +27,9 @@ struct LabRouteApp: App {
                 .frame(width: 560, height: 680)
         }
         .windowResizability(.contentSize)
-        // Returning users run in the menu bar. Fresh setup and recovery open the window.
+        // Returning users run in the menu bar. Fresh setup, recovery and fixture demos open the window.
         .defaultLaunchBehavior(CommandLine.arguments.contains("--non-interactive") ||
-                              (model.configuredConnection != nil && !model.needsRecovery) ? .suppressed : .presented)
+                              (model.configuredConnection != nil && !model.needsRecovery && !CommandLine.arguments.contains("--fixture")) ? .suppressed : .presented)
         .commands {
             CommandGroup(replacing: .appTermination) {
                 Button("Disconnect and Quit LabRoute") { model.quit() }

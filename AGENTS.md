@@ -31,3 +31,7 @@ Command Line Tools only (no Xcode): SwiftUI macros like `@State` are unavailable
 - No telemetry, request logging, TLS interception or custom CAs.
 - Never commit hostnames, usernames, keys or personal configuration.
 - Tests must use `FixtureEnvironment` / fake preferences, never real network settings.
+
+## README screenshot
+
+`docs/screenshot.png` comes from the development app in fixture mode (example data only, never real settings): build with `bash scripts/build-app.sh debug`, write a demo `configuration.json` into a new fixture root, run `open -n "dist/LabRoute Development.app" --args --fixture <UUID> --snapshot <png>`, then run `labroute --fixture <UUID> connect --wait`. The app saves its own window after 6 seconds.
