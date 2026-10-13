@@ -123,7 +123,7 @@ labroute env                                 # proxy variables for the shell, em
 ssh, git and curl ignore the browser proxy. LabRoute covers them separately, using the same routed domains:
 
 - **ssh and git over ssh**: on the **Terminal** tab, add your hosts (HostName, aliases, user, identity file). LabRoute writes them to `~/.ssh/labroute/config`. Click **Add** next to `~/.ssh/config` once; that puts `Include ~/.ssh/labroute/config` at the top of the file.
-- **curl, git over HTTPS, pip**: click **Add** next to `~/.zshrc`. New shells then get `http_proxy`/`https_proxy` pointing at LabRoute's terminal proxy on `127.0.0.1:1081`. It sends routed domains through the tunnel and everything else (GitHub, Homebrew, …) directly.
+- **curl, git over HTTPS, pip**: click **Add** next to `~/.zshrc`. Before each prompt, the shell then sets `http_proxy`/`https_proxy` to LabRoute's terminal proxy on `127.0.0.1:1081` while LabRoute runs, and removes them again when it doesn't. The proxy sends routed domains through the tunnel and everything else (GitHub, Homebrew, …) directly. Open a new terminal window once after clicking **Add**.
 
 A host is routed when its HostName lies in a domain you added yourself (e.g. `intranet.uni-example.de`). For such hosts, ssh picks a route each time it connects:
 

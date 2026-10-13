@@ -30,8 +30,16 @@ public struct TerminalFiles: Sendable {
         let path = managedSSHConfig.path
         return "Include " + (path.hasPrefix(home + "/") ? "~" + path.dropFirst(home.count) : "\"" + path + "\"")
     }
-    /// An `if`, so a missing app leaves exit status 0 for prompts that show it.
-    public var shellLine: String { "if [ -x '\(labroutePath)' ]; then eval \"$('\(labroutePath)' env)\"; fi" }
+    /// Re-evaluated before every prompt, so quitting or starting LabRoute takes
+    /// effect in open shells. An `if`, so a missing app leaves exit status 0.
+    public var shellLine: String {
+        "if [ -x '\(labroutePath)' ]; then _labroute_env() { eval \"$('\(labroutePath)' env)\"; }; autoload -Uz add-zsh-hook; add-zsh-hook precmd _labroute_env; fi"
+    }
+    /// Earlier forms that set the variables only once, at shell start.
+    public var legacyShellLines: [String] {
+        ["if [ -x '\(labroutePath)' ]; then eval \"$('\(labroutePath)' env)\"; fi",
+         "[ -x '\(labroutePath)' ] && eval \"$('\(labroutePath)' env)\""]
+    }
 }
 
 public enum SSHConfigWriter {
@@ -69,20 +77,21 @@ public enum SSHConfigWriter {
 }
 
 public enum HookState: String, Sendable {
-    case installed, missing, misplaced, symlink
+    case installed, missing, misplaced, outdated, symlink
 }
 
 /// The single lines that connect the user's own files to LabRoute.
 public enum HookLines {
     public static let marker = "# Added by LabRoute"
 
-    public static func state(of url: URL, line: String, mustPrecedeHosts: Bool) -> HookState {
+    public static func state(of url: URL, line: String, legacy: [String] = [], mustPrecedeHosts: Bool) -> HookState {
         if isSymlink(url) { return .symlink }
         guard let text = try? String(contentsOf: url, encoding: .utf8) else { return .missing }
         var seenHost = false
         for raw in text.components(separatedBy: "\n") {
             let trimmed = raw.trimmingCharacters(in: .whitespaces)
             if trimmed == line { return mustPrecedeHosts && seenHost ? .misplaced : .installed }
+            if legacy.contains(trimmed) { return .outdated }
             let keyword = trimmed.split(whereSeparator: { $0 == " " || $0 == "\t" || $0 == "=" }).first?.lowercased()
             if keyword == "host" || keyword == "match" { seenHost = true }
         }
@@ -90,7 +99,7 @@ public enum HookLines {
     }
 
     /// Prepends (ssh, which uses the first value it finds) or appends (shell) the line, after a backup.
-    public static func add(_ line: String, to url: URL, prepend: Bool) throws {
+    public static func add(_ line: String, to url: URL, prepend: Bool, replacing legacy: [String] = []) throws {
         guard !isSymlink(url) else { throw RuntimeError.message("\(url.path) is a symbolic link. Add this line yourself: \(line)") }
         let existing = (try? String(contentsOf: url, encoding: .utf8)) ?? ""
         let mode = permissions(url) ?? 0o600
@@ -99,7 +108,7 @@ public enum HookLines {
             try? FileManager.default.removeItem(at: backup)
             try FileManager.default.copyItem(at: url, to: backup)
         }
-        let cleaned = removing(line, from: existing)
+        let cleaned = ([line] + legacy).reduce(existing) { removing($1, from: $0) }
         let block = marker + "\n" + line + "\n"
         let updated: String
         if prepend { updated = block + (cleaned.isEmpty ? "" : "\n" + cleaned) }
@@ -108,9 +117,9 @@ public enum HookLines {
         chmod(url.path, mode)
     }
 
-    public static func remove(_ line: String, from url: URL) throws {
+    public static func remove(_ line: String, from url: URL, legacy: [String] = []) throws {
         guard !isSymlink(url), let existing = try? String(contentsOf: url, encoding: .utf8) else { return }
-        let updated = removing(line, from: existing)
+        let updated = ([line] + legacy).reduce(existing) { removing($1, from: $0) }
         guard updated != existing else { return }
         let mode = permissions(url) ?? 0o600
         try PrivateFile.write(Data(updated.utf8), to: url)

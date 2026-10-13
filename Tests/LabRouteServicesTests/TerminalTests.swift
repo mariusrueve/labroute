@@ -291,3 +291,17 @@ private func exchange(_ port: UInt16, _ request: String, expect count: Int) thro
     close(fd)
     #expect(ContinuousClock.now - start < .seconds(2))
 }
+
+@Test func shellHookReplacesOutdatedLines() throws {
+    let root = try temporaryDirectory(); defer { try? FileManager.default.removeItem(at: root) }
+    let files = TerminalFiles.fixture(root: root)
+    let old = files.legacyShellLines[1]
+    try FileManager.default.createDirectory(at: files.zshrc.deletingLastPathComponent(), withIntermediateDirectories: true)
+    try ("export A=1\n\n" + HookLines.marker + "\n" + old + "\n").write(to: files.zshrc, atomically: true, encoding: .utf8)
+    #expect(HookLines.state(of: files.zshrc, line: files.shellLine, legacy: files.legacyShellLines, mustPrecedeHosts: false) == .outdated)
+    try HookLines.add(files.shellLine, to: files.zshrc, prepend: false, replacing: files.legacyShellLines)
+    #expect(try String(contentsOf: files.zshrc, encoding: .utf8) == "export A=1\n\n" + HookLines.marker + "\n" + files.shellLine + "\n")
+    #expect(files.shellLine.contains("add-zsh-hook precmd"))
+    try HookLines.remove(files.shellLine, from: files.zshrc, legacy: files.legacyShellLines)
+    #expect(try String(contentsOf: files.zshrc, encoding: .utf8) == "export A=1\n")
+}

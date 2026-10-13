@@ -260,11 +260,12 @@ struct TerminalSection: View {
             case .installed: Text("✓ \(file) includes LabRoute").font(.callout)
             case .missing: Text("\(file) does not include LabRoute yet").font(.callout)
             case .misplaced: Text("⚠ In \(file) the line must come before any Host or Match block").font(.callout)
+            case .outdated: Text("⚠ \(file) has an older LabRoute line").font(.callout)
             case .symlink: Text("\(file) is a symlink: add this line yourself").font(.callout)
             }
             Spacer()
             if state == .installed { Button("Remove") { set(false) } }
-            else if state != .symlink { Button(state == .misplaced ? "Move to Top" : "Add") { set(true) } }
+            else if state != .symlink { Button(state == .misplaced ? "Move to Top" : state == .outdated ? "Update" : "Add") { set(true) } }
         }
         .help(line)
         .contextMenu { Button("Copy Line") { NSPasteboard.general.clearContents(); NSPasteboard.general.setString(line, forType: .string) } }

@@ -50,9 +50,15 @@ enum TerminalCLI {
         exit(0)
     }
 
+    /// Shell code for the ~/.zshrc hook, which evaluates it before every prompt:
+    /// exports while the app's proxy listens, otherwise unsets variables that
+    /// still point at it (and leaves any other proxy settings alone).
     static func printEnvironment() -> Never {
-        // Prints nothing unless the app's HTTP proxy is listening, so shells never get a dead proxy.
-        guard let port = request(ControlRequest(.status), timeout: 1)?.httpProxyPort else { exit(0) }
+        let names = "http_proxy https_proxy HTTP_PROXY HTTPS_PROXY no_proxy NO_PROXY"
+        guard let port = request(ControlRequest(.status), timeout: 1)?.httpProxyPort else {
+            print("case \"${https_proxy:-}\" in http://127.0.0.1:\(SplitHTTPProxy.defaultPort)) unset \(names);; esac")
+            exit(0)
+        }
         let proxy = "http://127.0.0.1:\(port)"
         let noProxy = "localhost,127.0.0.1,::1"
         print("export http_proxy=\(proxy) https_proxy=\(proxy) HTTP_PROXY=\(proxy) HTTPS_PROXY=\(proxy) no_proxy=\(noProxy) NO_PROXY=\(noProxy)")

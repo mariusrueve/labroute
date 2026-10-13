@@ -9,7 +9,8 @@ import LabRouteCore
 
     public func refreshTerminalHooks() {
         sshHookState = HookLines.state(of: environment.terminal.userSSHConfig, line: sshIncludeLine, mustPrecedeHosts: true)
-        shellHookState = HookLines.state(of: environment.terminal.zshrc, line: shellHookLine, mustPrecedeHosts: false)
+        shellHookState = HookLines.state(of: environment.terminal.zshrc, line: shellHookLine,
+                                         legacy: environment.terminal.legacyShellLines, mustPrecedeHosts: false)
     }
 
     @discardableResult public func saveSSHHost(_ host: SSHHostEntry) -> Bool {
@@ -96,8 +97,8 @@ import LabRouteCore
     public func setShellHook(_ installed: Bool) {
         let files = environment.terminal
         do {
-            if installed { try HookLines.add(shellHookLine, to: files.zshrc, prepend: false); record("Shell line added") }
-            else { try HookLines.remove(shellHookLine, from: files.zshrc); record("Shell line removed") }
+            if installed { try HookLines.add(shellHookLine, to: files.zshrc, prepend: false, replacing: files.legacyShellLines); record("Shell line added") }
+            else { try HookLines.remove(shellHookLine, from: files.zshrc, legacy: files.legacyShellLines); record("Shell line removed") }
             error = nil
         } catch { self.error = error.localizedDescription }
         refreshTerminalHooks()

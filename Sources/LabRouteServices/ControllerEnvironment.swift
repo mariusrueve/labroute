@@ -114,7 +114,7 @@ extension SSHSupervisor: TunnelController {}
                   result.0 == 0 else { return nil }
             return String(decoding: result.1, as: UTF8.self)
         }
-        result.httpProxyPort = 1081
+        result.httpProxyPort = SplitHTTPProxy.defaultPort
         result.runtimeNeedsRecovery = { runtime.needsRecovery }
         result.cleanupRuntime = { try await runtime.cleanup() }
         return result

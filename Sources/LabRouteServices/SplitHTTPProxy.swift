@@ -22,6 +22,7 @@ public final class RouteTable: @unchecked Sendable {
 /// directly. A routed domain never falls back to a direct connection.
 /// Hosts and payloads are never logged.
 public final class SplitHTTPProxy: @unchecked Sendable {
+    public static let defaultPort: UInt16 = 1081
     public let routes: RouteTable
     private let state = NSLock()
     private var listener: Int32 = -1
