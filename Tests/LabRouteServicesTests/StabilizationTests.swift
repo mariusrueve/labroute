@@ -143,7 +143,7 @@ private struct EmptyEpisodeSecrets: KeySecretStore {
     let supervisor = SSHSupervisor(runner: runner, readiness: { _, _ in true }, sleep: { _ in await Task.yield() },
         retryDelay: { attempt in delays.append(attempt); return 0 }, now: { instant })
     let connection = Connection(institution: "Fixture", hostname: "ssh.example.test", username: "fixture", keyReference: "/tmp/unused")
-    try await supervisor.start(connection: connection, port: UInt16.random(in: 40000...60000), helper: URL(fileURLWithPath: "/usr/bin/true"), secrets: EmptyEpisodeSecrets())
+    try await supervisor.start(connection: connection, port: UInt16.random(in: 40000...48000), helper: URL(fileURLWithPath: "/usr/bin/true"), secrets: EmptyEpisodeSecrets())
     for episode in 0..<8 {
         for _ in 0..<1000 { if runner.children.count == episode + 1 && supervisor.state == .connected { break }; await Task.yield() }
         #expect(runner.children.count == episode + 1)
@@ -160,7 +160,7 @@ private struct EmptyEpisodeSecrets: KeySecretStore {
     let runner = EpisodeRunner()
     let supervisor = SSHSupervisor(runner: runner, readiness: { _, _ in true })
     let connection = Connection(institution: "Fixture", hostname: "ssh.example.test", username: "fixture", keyReference: "/tmp/unused")
-    let port = UInt16.random(in: 40000...60000)
+    let port = UInt16.random(in: 40000...48000)
     try await supervisor.start(connection: connection, port: port, helper: URL(fileURLWithPath: "/usr/bin/true"), secrets: EmptyEpisodeSecrets())
     for _ in 0..<1000 { if supervisor.state == .connected { break }; await Task.yield() }
     runner.children[0].refuseStop = true
@@ -282,7 +282,7 @@ private struct EmptyEpisodeSecrets: KeySecretStore {
         #expect(events.first == "record"); events.append("ready"); return true
     }, recordProcess: { _ in events.append("record") })
     let connection = Connection(institution: "Fixture", hostname: "ssh.example.test", username: "fixture", keyReference: "/tmp/unused")
-    try await supervisor.start(connection: connection, port: UInt16.random(in: 40000...60000), helper: URL(fileURLWithPath: "/usr/bin/true"), secrets: EmptyEpisodeSecrets())
+    try await supervisor.start(connection: connection, port: UInt16.random(in: 40000...48000), helper: URL(fileURLWithPath: "/usr/bin/true"), secrets: EmptyEpisodeSecrets())
     for _ in 0..<1000 { if supervisor.state == .connected { break }; await Task.yield() }
     #expect(events.prefix(2) == ["record", "ready"])
     try await supervisor.stop()
@@ -301,7 +301,7 @@ private struct EmptyEpisodeSecrets: KeySecretStore {
     environment.sleep = { _ in await Task.yield() }
     environment.installProxy = { _ in throw ProxyError.authorizationRequired }
     let controller = ApplicationController(environment: environment, startIPC: false)
-    controller.socksPort = String(UInt16.random(in: 40000...60000))
+    controller.socksPort = String(UInt16.random(in: 40000...48000))
     defer { controller.shutdownControl(); try? FileManager.default.removeItem(at: fixture.root) }
     _ = controller.execute(ControlRequest(.connect))
     for _ in 0..<1000 { if !controller.busy { break }; await Task.yield() }

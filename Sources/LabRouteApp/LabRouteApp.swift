@@ -24,10 +24,11 @@ struct LabRouteApp: App {
             Image(nsImage: MenuBarIcon.image(for: menuState))
         }
         Window("LabRoute", id: "main") {
-            ScrollView { MainView(model: model).padding(24) }
-                .frame(width: 560, height: 680)
+            MainView(model: model)
+                .frame(minWidth: 560, idealWidth: 640, minHeight: 480, idealHeight: 720)
         }
-        .windowResizability(.contentSize)
+        .defaultSize(width: 640, height: 720)
+        .windowResizability(.contentMinSize)
         // Returning users run in the menu bar. Fresh setup, recovery and fixture demos open the window.
         .defaultLaunchBehavior(CommandLine.arguments.contains("--non-interactive") ||
                               (model.configuredConnection != nil && !model.needsRecovery && !CommandLine.arguments.contains("--fixture")) ? .suppressed : .presented)

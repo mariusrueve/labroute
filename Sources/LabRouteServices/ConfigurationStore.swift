@@ -31,6 +31,11 @@ public struct ConfigurationStore: Sendable {
               (value.selectedServiceIDs ?? []).allSatisfy({ !$0.isEmpty && $0.count <= 128 }),
               Set(value.selectedServiceIDs ?? []).count == (value.selectedServiceIDs ?? []).count else { throw StoreError.invalidConfiguration }
         if let connection = value.connection { try connection.validate() }
+        if let ssh = value.ssh {
+            guard ssh.hosts.count <= 64, Set(ssh.hosts.map(\.id)).count == ssh.hosts.count else { throw StoreError.invalidConfiguration }
+            try ssh.gateway.validate()
+            for host in ssh.hosts { try host.validate() }
+        }
         let builtIns = try RoutePack.defaults()
         for pack in value.packs {
             for route in pack.routes where route.source == .builtIn {

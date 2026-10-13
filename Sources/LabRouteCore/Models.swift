@@ -120,7 +120,12 @@ public struct AppConfiguration: Codable, Equatable, Sendable {
     public var connectOnLaunch = false
     public var selectedServiceIDs: [String]?
     public var networkLocationID: String?
+    public var ssh: SSHIntegration?
     public init(packs: [RoutePack]) { self.packs = packs }
+    /// Domains the user added; only these drive the managed ssh config.
+    public var customDomains: [Domain] {
+        Array(Set(packs.filter(\.enabled).flatMap(\.routes).filter { $0.enabled && $0.source == .custom }.map(\.domain))).sorted()
+    }
 }
 
 public protocol RoutingBackend: Sendable {

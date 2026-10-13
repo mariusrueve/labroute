@@ -53,6 +53,7 @@ import LabRouteCore
                 saved.networkLocationID = services.first { selectedServices.contains($0.id) }?.locationID
                 try store.save(saved)
                 configuration = saved; configuredConnection = verified
+                scheduleSSHSync()
                 keyPath = verified.keyReference ?? ""
                 status = "SSH key verified · ready to connect"
             } catch is CancellationError { outcome = .failure(ControlFailure(code: .cancelled)); status = "Setup cancelled" }

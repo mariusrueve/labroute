@@ -255,7 +255,7 @@ private struct EmptySecrets: KeySecretStore {
     let runner = FakeRunner()
     let supervisor = SSHSupervisor(runner: runner, readiness: { _, _ in true })
     let connection = Connection(institution: "Fixture", hostname: "ssh.example.test", username: "fixture", keyReference: "/tmp/unused-key")
-    let port = UInt16.random(in: 40000...60000)
+    let port = UInt16.random(in: 40000...48000)
     try await supervisor.start(connection: connection, port: port, helper: URL(fileURLWithPath: "/usr/bin/true"), secrets: EmptySecrets())
     await #expect(throws: (any Error).self) {
         try await supervisor.start(connection: connection, port: port, helper: URL(fileURLWithPath: "/usr/bin/true"), secrets: EmptySecrets())
@@ -279,7 +279,7 @@ private struct EmptySecrets: KeySecretStore {
     runner.child.diagnostic = "Permission denied (publickey)."
     let supervisor = SSHSupervisor(runner: runner, readiness: { _, _ in false })
     let connection = Connection(institution: "Fixture", hostname: "ssh.example.test", username: "fixture", keyReference: "/tmp/unused-key")
-    try await supervisor.start(connection: connection, port: UInt16.random(in: 40000...60000), helper: URL(fileURLWithPath: "/usr/bin/true"), secrets: EmptySecrets())
+    try await supervisor.start(connection: connection, port: UInt16.random(in: 40000...48000), helper: URL(fileURLWithPath: "/usr/bin/true"), secrets: EmptySecrets())
     for _ in 0..<100 {
         if supervisor.state == .error { break }
         try await Task.sleep(for: .milliseconds(10))
@@ -366,7 +366,7 @@ private struct EmptySecrets: KeySecretStore {
     let runner = ReplacingRunner()
     let supervisor = SSHSupervisor(runner: runner, readiness: { _, _ in true })
     let connection = Connection(institution: "Fixture", hostname: "ssh.example.test", username: "fixture", keyReference: "/tmp/unused")
-    let port = UInt16.random(in: 40000...60000)
+    let port = UInt16.random(in: 40000...48000)
     try await supervisor.start(connection: connection, port: port, helper: URL(fileURLWithPath: "/usr/bin/true"), secrets: EmptySecrets())
     for _ in 0..<100 {
         if supervisor.state == .connected { break }
@@ -424,7 +424,7 @@ private struct EmptySecrets: KeySecretStore {
             delays.append(delay); return delay
         })
     let connection = Connection(institution: "Fixture", hostname: "ssh.example.test", username: "fixture", keyReference: "/tmp/fixture")
-    try await supervisor.start(connection: connection, port: UInt16.random(in: 40000...60000), helper: URL(fileURLWithPath: "/usr/bin/true"), secrets: EmptySecrets())
+    try await supervisor.start(connection: connection, port: UInt16.random(in: 40000...48000), helper: URL(fileURLWithPath: "/usr/bin/true"), secrets: EmptySecrets())
     for _ in 0..<1000 { if supervisor.state == .error { break }; await Task.yield() }
     #expect(supervisor.state == .error)
     #expect(runner.starts == 7)

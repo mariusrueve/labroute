@@ -48,6 +48,12 @@ extension SSHSupervisor: TunnelController {}
     public var restoreProxyWithoutInteraction: (() async throws -> OwnedSSHProcess?)?
     public var completeProxyCleanup: () async throws -> Void
     public var observeNetwork: (@escaping @Sendable () -> Void) -> NetworkObservation? = { _ in nil }
+    /// Defaults stay next to the configuration file; only `live()` points at the real home directory.
+    public var terminal: TerminalFiles
+    public var verifySSHConfig: ([String]) -> (URL) async throws -> Void = { _ in { _ in } }
+    /// Effective `ssh -G` output for a host through the user's own config, or nil when unavailable.
+    public var effectiveSSH: (String) async -> String? = { _ in nil }
+    public var httpProxyPort: UInt16? = nil
     public init(configuration: URL, journal: URL, socket: URL, helper: URL, tunnel: any TunnelController,
                 secrets: any KeySecretStore, preferences: @escaping (Bool) throws -> any ProxyPreferences,
                 services: @escaping () throws -> [NetworkService], primary: @escaping () -> Set<String>,
@@ -58,6 +64,7 @@ extension SSHSupervisor: TunnelController {}
         self.tunnel = tunnel; self.secrets = secrets; self.preferences = preferences; self.services = services
         self.primary = primary; self.effectivePAC = effectivePAC; self.loginStatus = loginStatus; self.setLogin = setLogin
         self.onboarding = onboarding; self.sleep = sleep; self.now = now
+        self.terminal = .fixture(root: configuration.deletingLastPathComponent())
         // Injected fixture adapters remain on the main actor. Live sessions use
         // the serialized worker below and never block the controller actor.
         self.installProxy = { activation in
@@ -100,6 +107,14 @@ extension SSHSupervisor: TunnelController {}
         result.validateProxy = { try await worker.validate($0) }
         result.readServices = { try await worker.services() }
         result.observeNetwork = { NetworkObservation($0) }
+        result.terminal = .live()
+        result.verifySSHConfig = SSHConfigWriter.verifyWithSSH
+        result.effectiveSSH = { host in
+            guard let result = try? await collect(ProcessSpec("/usr/bin/ssh", ["-G", "--", host]), runner: SystemProcessRunner(), timeout: .seconds(10)),
+                  result.0 == 0 else { return nil }
+            return String(decoding: result.1, as: UTF8.self)
+        }
+        result.httpProxyPort = 1081
         result.runtimeNeedsRecovery = { runtime.needsRecovery }
         result.cleanupRuntime = { try await runtime.cleanup() }
         return result

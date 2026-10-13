@@ -66,6 +66,14 @@ open class ApplicationController: ObservableObject {
     var configuration: AppConfiguration?
     var monitor: Task<Void, Never>?
     @Published public var tunnelState: TunnelState = .disabled
+    @Published public var sshIntegration = SSHIntegration()
+    @Published public var sshConfigStatus = ""
+    @Published public var sshHookState: HookState = .missing
+    @Published public var shellHookState: HookState = .missing
+    var sshSyncTask: Task<Void, Never>?
+    @Published public var httpProxyStatus = ""
+    public let httpProxy = SplitHTTPProxy()
+    var routeObserver: AnyCancellable?
     var controlServer: LocalServer?
     let tunnel: any TunnelController
     let server = PACServer()
@@ -102,6 +110,7 @@ open class ApplicationController: ObservableObject {
             connectOnLaunch = configuration?.connectOnLaunch ?? false
             configuredConnection = configuration?.connection
             selectedServices = Set(configuration?.selectedServiceIDs ?? [])
+            sshIntegration = configuration?.ssh ?? SSHIntegration()
             if let connection = configuredConnection {
                 institution = connection.institution; hostname = connection.hostname
                 username = connection.username; sshPort = String(connection.port)
@@ -110,6 +119,9 @@ open class ApplicationController: ObservableObject {
         } catch { self.error = "Configuration recovery required: " + error.localizedDescription }
         refreshServices()
         refreshLoginStatus()
+        refreshTerminalHooks()
+        scheduleSSHSync()
+        startHTTPProxy()
         tunnel.changed = { [weak self] state, message in
             guard let self else { return }
             self.tunnelState = state
@@ -207,6 +219,7 @@ open class ApplicationController: ObservableObject {
         }
         configuration = saved; packs = updated
         record("Routes saved")
+        scheduleSSHSync()
     }
 
     public func addRoute() {

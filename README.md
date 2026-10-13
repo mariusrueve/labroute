@@ -92,12 +92,12 @@ To update, quit LabRoute, then `git pull` and run `bash scripts/install.sh` agai
 
 ## First-time setup
 
-1. Open LabRoute. The window opens with **SSH setup** expanded.
+1. Open LabRoute. The window opens on the **Connection** tab.
 2. Enter a name for your institution, the SSH hostname, the port (usually 22) and your username.
 3. Either choose an existing private key, or let LabRoute create a dedicated encrypted key. In that case it asks for your account password **once** to add the public key to `~/.ssh/authorized_keys` on the server. The password is not stored.
 4. Confirm the server's host key and click **Set Up and Verify SSH**.
-5. Under **Network services**, tick the connection you use (Wi-Fi and/or Ethernet).
-6. Add your internal sites under **Routed domains** (e.g. `intranet.uni-example.de`). Subdomains are included automatically.
+5. Under **Network services** on the same tab, tick the connection you use (Wi-Fi and/or Ethernet).
+6. Add your internal sites on the **Domains** tab (e.g. `intranet.uni-example.de`). Subdomains are included automatically.
 
 ## Daily use
 
@@ -105,7 +105,7 @@ To update, quit LabRoute, then `git pull` and run `bash scripts/install.sh` agai
 - When the icon shows a shield, you're connected. **Quit and reopen your browser once** (⌘Q). Browsers keep their existing connections to sites and won't route them through LabRoute until they restart. Then open papers and internal pages as usual.
 - You can add or toggle domains while connected. Reload the page; if the browser keeps using the old route, restart it.
 - **Disconnect** restores your previous proxy settings. Quitting LabRoute in any way (⌘Q, the menu, logging out, shutting down) disconnects and restores them first.
-- Optional: *Preferences → Launch at login* and *Connect automatically*.
+- Optional: *Settings → Launch at login* and *Connect automatically*.
 
 A command-line client is bundled for scripting the running app. Homebrew puts it on your PATH; for a source install it's at `~/Applications/LabRoute.app/Contents/MacOS/labroute`.
 
@@ -114,7 +114,34 @@ labroute status --json
 labroute connect --wait
 labroute route add intranet.uni-example.de
 labroute disconnect --wait
+labroute proxy --check host.uni-example.de   # exit 0 if ssh would use the tunnel now
+labroute env                                 # proxy variables for the shell, empty if the app isn't running
 ```
+
+## Terminal, SSH and git (e.g. Gerrit)
+
+ssh, git and curl ignore the browser proxy. LabRoute covers them separately, using the same routed domains:
+
+- **ssh and git over ssh**: on the **Terminal** tab, add your hosts (HostName, aliases, user, identity file). LabRoute writes them to `~/.ssh/labroute/config`. Click **Add** next to `~/.ssh/config` once; that puts `Include ~/.ssh/labroute/config` at the top of the file.
+- **curl, git over HTTPS, pip**: click **Add** next to `~/.zshrc`. New shells then get `http_proxy`/`https_proxy` pointing at LabRoute's terminal proxy on `127.0.0.1:1081`. It sends routed domains through the tunnel and everything else (GitHub, Homebrew, …) directly.
+
+A host is routed when its HostName lies in a domain you added yourself (e.g. `intranet.uni-example.de`). For such hosts, ssh picks a route each time it connects:
+
+| LabRoute | Route |
+|---|---|
+| Connected | Through the existing LabRoute tunnel (`labroute proxy`); no second login on the jump host |
+| Disconnected, reconnecting after sleep, or quit | `ProxyJump` through your SSH server, using your own key |
+
+So commands like these work unchanged from anywhere:
+
+```bash
+git clone "ssh://user@gerrit.uni-example.de:29418/project" && (cd project && curl -Lo "$(git rev-parse --git-dir)/hooks/commit-msg" https://gerrit.uni-example.de/tools/hooks/commit-msg && chmod +x "$(git rev-parse --git-dir)/hooks/commit-msg")
+git fetch ssh://user@gerrit.uni-example.de:29418/project refs/changes/01/1001/1 && git checkout FETCH_HEAD
+```
+
+While LabRoute is disconnected, curl to a routed domain fails at once with *LabRoute is not connected*. Your own `~/.ssh/config` stays yours: hosts LabRoute doesn't manage are untouched. Once a host is in LabRoute, remove its old block from `~/.ssh/config`. Check what ssh will do with `ssh -G <host> | grep -E '^proxy'`.
+
+SSH sessions still end when the Mac sleeps long enough for the server to drop them. Use `tmux` or `zellij` on the server to resume where you were.
 
 ## Troubleshooting
 
@@ -127,7 +154,7 @@ labroute disconnect --wait
 ## Limitations
 
 - This is a best-effort access helper, **not a VPN or a privacy tool**. Only the listed domains are tunnelled. If the local PAC file becomes unavailable, the browser may fall back to a direct connection.
-- Only applications that honour the macOS system proxy (PAC) settings are covered: Safari, Chrome, Brave and other Chromium browsers that use system settings. A browser extension or policy that sets its own proxy overrides LabRoute. Other tools need their own SOCKS5 setting (`127.0.0.1:1080` while connected).
+- Browsers are covered through the macOS system proxy (PAC) settings: Safari, Chrome, Brave and other Chromium browsers that use system settings. A browser extension or policy that sets its own proxy overrides LabRoute. ssh, git and shell tools are covered through the terminal integration above; other apps need their own proxy setting (SOCKS5 `127.0.0.1:1080` or HTTP `127.0.0.1:1081` while connected).
 - Each user needs their own SSH account and must follow their institution's terms of use for licensed content.
 
 ## Development
@@ -139,6 +166,6 @@ bash scripts/build-app.sh debug      # dist/LabRoute Development.app
 bash scripts/build-app.sh release    # dist/LabRoute.app
 ```
 
-Code layout: `Sources/LabRouteCore` (domains, route packs, PAC generation), `Sources/LabRouteServices` (controller, SSH supervision, PAC server, proxy transactions), `Sources/LabRouteApp` (SwiftUI), `Sources/LabRouteCLI`, `Sources/LabRouteAskPass` (credential bridge for `ssh`). The built-in publisher list is in `Sources/LabRouteCore/Resources/route-packs.json`.
+Code layout: `Sources/LabRouteCore` (domains, route packs, PAC generation), `Sources/LabRouteServices` (controller, SSH supervision, PAC server, proxy transactions, terminal proxy and managed ssh config), `Sources/LabRouteApp` (SwiftUI), `Sources/LabRouteCLI`, `Sources/LabRouteAskPass` (credential bridge for `ssh`). The built-in publisher list is in `Sources/LabRouteCore/Resources/route-packs.json`.
 
 See [SECURITY.md](SECURITY.md) for what LabRoute changes on your system. Licensed under [Apache-2.0](LICENSE).

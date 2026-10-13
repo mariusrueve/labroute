@@ -4,6 +4,15 @@ public enum AppCommand: String, Codable, Sendable {
     case status, connect, disconnect, enable, disable, recover, routes, services, preferences, diagnostics, operation, cancel, quit
     case routeAdd = "route.add", routeEnable = "route.enable", routeDisable = "route.disable"
     case packSet = "pack.set", routeSet = "route.set", servicesSet = "services.set", preferenceSet = "preference.set"
+    case routeResolve = "route.resolve"
+}
+/// Answer to `route.resolve`: whether a host is routed and the tunnel can carry it now.
+public struct RouteResolution: Codable, Equatable, Sendable {
+    public var routed: Bool
+    public var tunnel: Bool
+    public var socksPort: UInt16?
+    public init(routed: Bool, tunnel: Bool, socksPort: UInt16?) { self.routed = routed; self.tunnel = tunnel; self.socksPort = socksPort }
+    public var usable: Bool { routed && tunnel && socksPort != nil }
 }
 public struct ControlRequest: Codable, Sendable {
     public var version = 2
@@ -55,6 +64,8 @@ public struct ControlResponse: Codable, Sendable {
     public var humanInteraction: String?
     public var cancellationDeferred: Bool?
     public var shuttingDown: Bool?
+    public var resolution: RouteResolution?
+    public var httpProxyPort: UInt16?
     public init(success: Bool, message: String, status: RuntimeStatus? = nil, routes: [RoutePack]? = nil) {
         self.success = success; self.message = message; self.status = status; self.routes = routes
     }

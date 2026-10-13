@@ -12,6 +12,7 @@ struct ExperimentalCLI {
         var journal = LabRoutePaths.journal
         do {
             var arguments = Array(CommandLine.arguments.dropFirst())
+            if ["proxy", "env"].contains(arguments.first) { TerminalCLI.run(arguments) }
             if arguments.first != "experiment" {
                 try await AgentCLI.run(arguments)
                 return
@@ -27,7 +28,7 @@ struct ExperimentalCLI {
                 throw UsageError()
             }
             #if !DEBUG
-            guard !["apply", "restore", "serve-pac"].contains(arguments[1]) else { throw UsageError() }
+            guard !["apply", "restore", "serve-pac", "serve-http-proxy"].contains(arguments[1]) else { throw UsageError() }
             #endif
             let transaction = ProxyTransaction(journalURL: journal)
             switch arguments[1] {
@@ -98,6 +99,12 @@ struct ExperimentalCLI {
                 let bound = try await server.start(script: script, port: port)
                 print("Experimental PAC: http://127.0.0.1:\(bound)/proxy.pac")
                 while true { try await Task.sleep(for: .seconds(30)) }
+            case "serve-http-proxy" where arguments.count == 5:
+                guard let socks = UInt16(arguments[3]), let port = UInt16(arguments[4]) else { throw PACError.invalidPort }
+                let proxy = SplitHTTPProxy()
+                proxy.routes.update(routes: RouteSet(domains: [try Domain(arguments[2])]), socksPort: socks == 0 ? nil : socks)
+                print("Experimental terminal proxy: http://127.0.0.1:\(try proxy.start(port: port))")
+                while true { try await Task.sleep(for: .seconds(30)) }
             #endif
             default: throw UsageError()
             }
@@ -150,6 +157,7 @@ private struct UsageError: Error, LocalizedError {
           labroute experiment check-resources
           labroute experiment generate-pac <domain> <socks-port>
           labroute experiment serve-pac <domain> <socks-port> <pac-port-or-0>
+          labroute experiment serve-http-proxy <domain> <socks-port-or-0> <port-or-0>
           labroute experiment apply http://127.0.0.1:<port>/proxy.pac <service-id> [...]
           labroute experiment restore
         Optional --journal <path> selects an isolated restoration record for tests.

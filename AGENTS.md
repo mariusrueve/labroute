@@ -5,9 +5,9 @@ Personal macOS menu-bar tool: routes selected domains (lab intranet, journal pub
 ## Layout
 
 - `Sources/LabRouteCore`: value models, domain validation, route packs (`Resources/route-packs.json`), PAC generation.
-- `Sources/LabRouteServices`: `ApplicationController` (shared by GUI and CLI IPC), SSH supervision, loopback PAC server, proxy transactions/journal, configuration store, fixture test doubles.
+- `Sources/LabRouteServices`: `ApplicationController` (shared by GUI and CLI IPC), SSH supervision, loopback PAC server, proxy transactions/journal, configuration store, fixture test doubles. Terminal integration: `SplitHTTPProxy` (127.0.0.1:1081), `StreamRelay` (TCP connect, SOCKS5 client, relay), `TerminalIntegration` (managed ssh config, hook lines).
 - `Sources/LabRouteApp`: SwiftUI menu bar and window over the controller.
-- `Sources/LabRouteCLI`: IPC client for the running app; never starts SSH itself.
+- `Sources/LabRouteCLI`: IPC client for the running app; never starts SSH itself. `TerminalCLI.swift` holds `labroute proxy` (ssh ProxyCommand) and `labroute env`.
 - `Sources/LabRouteAskPass`: private credential bridge for `ssh`; never log secrets.
 
 ## Commands
@@ -30,7 +30,9 @@ Command Line Tools only (no Xcode): SwiftUI macros like `@State` are unavailable
 - Never persist account passwords; private keys never go into configuration JSON.
 - No telemetry, request logging, TLS interception or custom CAs.
 - Never commit hostnames, usernames, keys or personal configuration.
-- Tests must use `FixtureEnvironment` / fake preferences, never real network settings.
+- Tests must use `FixtureEnvironment` / fake preferences, never real network settings, and never the real `~/.ssh` or `~/.zshrc` (`ControllerEnvironment.terminal` defaults to paths beside the configuration; only `live()` uses the home directory).
+- `labroute proxy HOST PORT` is an ssh ProxyCommand: its stdout is the ssh stream. Messages go to stderr only.
+- The managed ssh config relies on ssh_config's first-value-wins order: host blocks first (no proxy keys), then the `Match … exec "labroute proxy --check %h"` tunnel layer, then the `ProxyJump` fallback. Check changes with `ssh -G`.
 
 ## Releases (Homebrew)
 
@@ -50,4 +52,4 @@ The tap update needs the `TAP_TOKEN` repository secret: a fine-grained PAT with 
 
 ## README screenshot
 
-`docs/screenshot.png` comes from the development app in fixture mode (example data only, never real settings): build with `bash scripts/build-app.sh debug`, write a demo `configuration.json` into a new fixture root, run `open -n "dist/LabRoute Development.app" --args --fixture <UUID> --snapshot <png>`, then run `labroute --fixture <UUID> connect --wait`. The app saves its own window after 6 seconds.
+`docs/screenshot.png` comes from the development app in fixture mode (example data only, never real settings): build with `bash scripts/build-app.sh debug`, write a demo `configuration.json` into a new fixture root, run `open -n "dist/LabRoute Development.app" --args --fixture <UUID> --snapshot <png>`, then run `labroute --fixture <UUID> connect --wait`. The app saves its own window after 6 seconds. `--snapshot-tabs <directory>` instead renders every tab offscreen (`domains.png`, `terminal.png`, …).

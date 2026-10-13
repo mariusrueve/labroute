@@ -10,7 +10,7 @@ import LabRouteCore
     }
     public func handleSleep() { tunnel.suspend() }
     public func handleWake() { tunnel.resume(); refreshServices(); if needsRecovery && serving { revalidate() } }
-    public func shutdownControl() { monitor?.cancel(); validationTask?.cancel(); networkRefreshTask?.cancel(); networkObserver?.stop(); controlServer?.stop() }
+    public func shutdownControl() { httpProxy.stop(); routeObserver = nil; monitor?.cancel(); validationTask?.cancel(); networkRefreshTask?.cancel(); networkObserver?.stop(); controlServer?.stop() }
     func finishOperation(_ result: Result<Void, ControlFailure>) {
         humanInteraction = nil
         guard let id = activeOperation, let index = operations.firstIndex(where: { $0.id == id }) else { return }
@@ -77,7 +77,7 @@ import LabRouteCore
         if let owner = request.expectedOwnerPID, owner != ProcessInfo.processInfo.processIdentifier {
             return failure(.unavailable, "Runtime owner changed")
         }
-        if shutdownRequested, !["status", "operation", "diagnostics", "routes", "services", "preferences"].contains(request.command) {
+        if shutdownRequested, !["status", "operation", "diagnostics", "routes", "services", "preferences", "route.resolve"].contains(request.command) {
             return failure(.busy, "LabRoute is shutting down")
         }
         guard let command = AppCommand(rawValue: request.command) else { return failure(.invalidRequest, "Unknown command") }
@@ -97,6 +97,13 @@ import LabRouteCore
                 response.status = runtime; response.message = request.version == 1 ? status : "Runtime status"
                 response.recoveryRequired = needsRecovery; response.humanInteraction = humanInteraction
                 response.operation = operations.last
+                response.httpProxyPort = httpProxy.port
+            case .routeResolve:
+                // Read-only and never recorded: ssh calls this for every connection.
+                guard let host = request.domain, !host.isEmpty, host.utf8.count <= 255 else { return failure(.invalidRequest, "A host is required") }
+                let tunnel = serving && tunnelState == .connected && activeSocksPort != nil
+                response.resolution = RouteResolution(routed: RouteSet(packs: packs).matches(host: host), tunnel: tunnel, socksPort: tunnel ? activeSocksPort : nil)
+                response.message = "Route resolution"
             case .diagnostics:
                 response.events = events; response.message = "Operational events"
             case .routes: response.routes = packs
