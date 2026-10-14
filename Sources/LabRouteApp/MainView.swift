@@ -52,7 +52,7 @@ struct MainView: View {
                     .disabled(model.busy || model.serving || model.needsRecovery || model.configuredConnection == nil)
             }
             if model.configuredConnection == nil {
-                Text("Start with SSH setup under Connection.").foregroundStyle(.secondary)
+                Text("Start with SSH setup under Connection, or import a lab setup file there.").foregroundStyle(.secondary)
             }
             if let error = model.error {
                 Text(error).foregroundStyle(.red).textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
@@ -107,6 +107,11 @@ struct DomainsTab: View {
                                 if (!pack.enabled || !route.enabled) && RouteSet(packs: model.packs).matches(host: route.domain.value) {
                                     Text("covered by another rule").font(.caption).foregroundStyle(.secondary)
                                 }
+                                if route.source == .custom {
+                                    Spacer()
+                                    Button { model.removeRoute(route.domain.value) } label: { Image(systemName: "minus.circle") }
+                                        .buttonStyle(.borderless).help("Remove \(route.domain.value)")
+                                }
                             }
                         }
                     }
@@ -153,6 +158,16 @@ struct ConnectionTab: View {
             }
             Button("Refresh Network Services") { model.refreshServices() }
                 .disabled(model.busy || model.needsRecovery)
+            Divider()
+
+            Text("Lab setup file").font(.headline)
+            Text("Shares the server, your own domains and ssh hosts with colleagues, never usernames or keys. Import only adds what is missing.")
+                .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            HStack {
+                Button("Import…") { model.importLabSetup() }
+                    .disabled(model.busy || model.serving || model.needsRecovery || !model.ownsRuntime)
+                Button("Export…") { model.exportLabSetup() }.disabled(model.configuredConnection == nil)
+            }
         }
     }
 }

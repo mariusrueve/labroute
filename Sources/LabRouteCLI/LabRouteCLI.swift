@@ -149,7 +149,7 @@ private struct UsageError: Error, LocalizedError {
         """
         LabRoute commands (the app must be running):
           labroute status|connect|disconnect|enable|disable|routes|recover
-          labroute route add|enable|disable <domain>
+          labroute route add|enable|disable|remove <domain>
         The app owns SSH; credentials are entered only in its native setup.
         Experimental developer commands:
           labroute experiment services

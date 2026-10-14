@@ -8,6 +8,7 @@
 - **Keychain**: the passphrase of a LabRoute-created key is stored in your login Keychain (service `org.labroute.keys`). Account passwords are used once during setup and never stored.
 - **Files**: `~/Library/Application Support/LabRoute/` (configuration, restoration record, SSH key/known_hosts). No logs of visited sites, no analytics, no network calls other than your SSH connection.
 - **Terminal integration** (only when you add SSH hosts or click *Add*): LabRoute writes `~/.ssh/labroute/config` and never overwrites a file there that it did not generate. *Add* puts one `Include` line at the top of `~/.ssh/config` and one line at the end of `~/.zshrc`, after copying each file to `*.labroute-backup`. *Remove* deletes exactly those lines. Symlinked files are never edited.
+- **Lab setup files** (*Export…* / *Import…* on the Connection tab): plain JSON with the server name, institution, your own domains and ssh host names, aliases and ports. Usernames, key paths, identity files and extra ssh options are never written or read, so an imported file cannot add ssh options that run commands. Import only adds missing entries.
 
 ## Manual recovery
 

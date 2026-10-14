@@ -115,6 +115,36 @@ func invalidDomain(input: String) {
     }
 }
 
+@Test func removeDeletesOnlyUserDomains() throws {
+    let defaults = try RoutePack.defaults()
+    var packs = try RouteEditing.apply("add", domain: "typo.example.test", to: defaults)
+    packs = try RouteEditing.apply("add", domain: "typo.example.test", packID: "internal", to: packs)
+    packs = try RouteEditing.apply("remove", domain: "https://typo.example.test/path", to: packs)
+    #expect(packs == defaults)
+    #expect(throws: RouteEditError.builtIn) { try RouteEditing.apply("remove", domain: "nature.com", to: packs) }
+    #expect(throws: RouteEditError.unknownRoute) { try RouteEditing.apply("remove", domain: "missing.example.test", to: packs) }
+}
+
+@Test func labSetupSharesOnlyLabData() throws {
+    var configuration = AppConfiguration(packs: try RouteEditing.apply("add", domain: "wiki.lab.example", packID: "internal", to: RoutePack.defaults()))
+    configuration.connection = Connection(institution: "Lab", hostname: "ssh.lab.example", port: 2222, username: "jdoe", keyReference: "/keys/id_labroute")
+    configuration.ssh = SSHIntegration(gateway: SSHGateway(aliases: ["lab"], identityFile: "~/.ssh/id_lab"),
+        hosts: [SSHHostEntry(aliases: ["gerrit"], hostname: "gerrit.lab.example", port: 29418, user: "jdoe",
+                             identityFile: "~/.ssh/id_gerrit", extraOptions: ["LocalForward 8080 localhost:80"])])
+    let data = try JSONEncoder().encode(try #require(LabSetup(configuration)))
+    let text = String(decoding: data, as: UTF8.self)
+    for personal in ["jdoe", "id_labroute", "id_lab\"", "id_gerrit", "LocalForward"] { #expect(!text.contains(personal)) }
+    let decoded = try JSONDecoder().decode(LabSetup.self, from: data)
+    try decoded.validate()
+    #expect(decoded.hostname == "ssh.lab.example" && decoded.port == 2222 && decoded.gatewayAliases == ["lab"])
+    #expect(decoded.internalDomains.map(\.value) == ["wiki.lab.example"] && decoded.customDomains.isEmpty)
+    #expect(decoded.sshHosts == [LabSetup.Host(hostname: "gerrit.lab.example", aliases: ["gerrit"], port: 29418)])
+    let bad = text.replacingOccurrences(of: "wiki.lab.example", with: "not a domain")
+    #expect(throws: (any Error).self) { try JSONDecoder().decode(LabSetup.self, from: Data(bad.utf8)) }
+    var newer = decoded; newer.labroute = 2
+    #expect(throws: LabSetupError.invalid) { try newer.validate() }
+}
+
 @Test func experimentalPACDirectiveParserMatrix() throws {
     // Documents how CFNetwork (Safari) parses each candidate directive.
     for directive in ["SOCKS 127.0.0.1:32123", "SOCKS5 127.0.0.1:32123", "SOCKS5 127.0.0.1:32123; SOCKS 127.0.0.1:32123"] {

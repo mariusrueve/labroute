@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 import LabRouteCore
 import LabRouteServices
 
@@ -129,6 +130,27 @@ final class ApplicationModel: ApplicationController {
     private func optional(_ text: String) -> String? {
         let trimmed = text.trimmingCharacters(in: .whitespaces)
         return trimmed.isEmpty ? nil : trimmed
+    }
+
+    func exportLabSetup() {
+        do {
+            let data = try labSetupData()
+            let panel = NSSavePanel()
+            panel.nameFieldStringValue = "LabRoute Setup.json"; panel.allowedContentTypes = [.json]
+            panel.message = "Share this file with your lab. It contains no usernames or keys."
+            guard panel.runModal() == .OK, let url = panel.url else { return }
+            try data.write(to: url, options: .atomic)
+        } catch { self.error = error.localizedDescription }
+    }
+
+    func importLabSetup() {
+        let panel = NSOpenPanel()
+        panel.canChooseDirectories = false; panel.allowsMultipleSelection = false; panel.allowedContentTypes = [.json]
+        panel.message = "Choose a lab setup file. LabRoute only adds what you don't have yet."
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        guard let data = try? Data(contentsOf: url) else { error = "The file could not be read."; return }
+        // Without a verified connection, the next step is entering your username here.
+        if importLabSetup(data) && configuredConnection != nil { selectedTab = .domains }
     }
 
     func chooseKey() {

@@ -2,7 +2,7 @@ import Foundation
 
 public enum AppCommand: String, Codable, Sendable {
     case status, connect, disconnect, enable, disable, recover, routes, services, preferences, diagnostics, operation, cancel, quit
-    case routeAdd = "route.add", routeEnable = "route.enable", routeDisable = "route.disable"
+    case routeAdd = "route.add", routeEnable = "route.enable", routeDisable = "route.disable", routeRemove = "route.remove"
     case packSet = "pack.set", routeSet = "route.set", servicesSet = "services.set", preferenceSet = "preference.set"
     case routeResolve = "route.resolve"
 }

@@ -53,7 +53,7 @@ import LabRouteServices
             }
             var request: ControlRequest
             if args.count == 1, let command = AppCommand(rawValue: args[0]) { request = ControlRequest(command) }
-            else if args.count == 3, args[0] == "route", ["add", "enable", "disable"].contains(args[1]) {
+            else if args.count == 3, args[0] == "route", ["add", "enable", "disable", "remove"].contains(args[1]) {
                 request = ControlRequest(command: "route." + args[1], domain: args[2], pack: pack)
             } else if args.count == 3, args[0] == "pack", ["enable", "disable"].contains(args[1]) {
                 request = ControlRequest(command: "pack.set", id: args[2], enabled: args[1] == "enable")
@@ -63,7 +63,7 @@ import LabRouteServices
                 request = ControlRequest(command: "preference.set", id: args[2], enabled: args[3] == "true")
             } else if args.count == 2, ["operation", "cancel"].contains(args[0]) {
                 request = ControlRequest(command: args[0], id: args[1])
-            } else { throw CLIError(.invalidRequest, "Use status|services|routes|preferences|diagnostics|connect|disconnect|recover|cancel|quit; route add|enable|disable DOMAIN [--pack ID]; pack enable|disable ID; services select ID...; preferences set autoConnect|launchAtLogin true|false; operation ID; app launch --path APP. Options: --json --wait --timeout SECONDS") }
+            } else { throw CLIError(.invalidRequest, "Use status|services|routes|preferences|diagnostics|connect|disconnect|recover|cancel|quit; route add|enable|disable|remove DOMAIN [--pack ID]; pack enable|disable ID; services select ID...; preferences set autoConnect|launchAtLogin true|false; operation ID; app launch --path APP. Options: --json --wait --timeout SECONDS") }
             request.nonInteractive = nonInteractive ? true : nil
             let deadline = ContinuousClock.now + .seconds(timeout)
             var response = try await send(request, socket: socket)

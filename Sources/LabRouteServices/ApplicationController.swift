@@ -227,6 +227,11 @@ open class ApplicationController: ObservableObject {
         if response.success { domain = ""; error = nil } else { error = response.message }
     }
 
+    public func removeRoute(_ domain: String) {
+        let response = execute(ControlRequest(command: "route.remove", domain: domain))
+        error = response.success ? nil : response.message
+    }
+
     func setPackImpl(_ id: String, enabled: Bool) {
         var updated = packs
         guard let index = updated.firstIndex(where: { $0.id == id }) else { return }

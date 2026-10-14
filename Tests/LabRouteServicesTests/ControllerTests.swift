@@ -247,6 +247,52 @@ private func waitSynchronously(_ semaphore: DispatchSemaphore) { semaphore.wait(
     #expect(controller.routingState == .active)
     #expect(try await settled(controller, controller.execute(ControlRequest(.disconnect))).success)
 }
+@Test @MainActor func routeEditsExplainFailuresAndRemoveUserDomains() async throws {
+    let (fixture, controller) = try fixture()
+    defer { controller.shutdownControl(); try? FileManager.default.removeItem(at: fixture.root) }
+    let invalid = controller.execute(ControlRequest(command: "route.add", domain: "not a domain"))
+    #expect(invalid.errorCode == .invalidRequest && invalid.message == DomainError.invalid.localizedDescription)
+    controller.domain = "not a domain"; controller.addRoute()
+    #expect(controller.error == DomainError.invalid.localizedDescription)
+    #expect(controller.execute(ControlRequest(command: "route.remove", domain: "nature.com")).message == RouteEditError.builtIn.localizedDescription)
+    // While connected, the last enabled domain cannot be removed.
+    #expect(try await settled(controller, controller.execute(ControlRequest(.connect))).success)
+    controller.setPack("publications", enabled: false)
+    let last = controller.execute(ControlRequest(command: "route.remove", domain: "selected.labroute.test"))
+    #expect(last.errorCode == .invalidRequest && last.message.hasPrefix("Keep at least one domain"))
+    #expect(try await settled(controller, controller.execute(ControlRequest(.disconnect))).success)
+    controller.removeRoute("selected.labroute.test")
+    #expect(controller.error == nil && !RouteSet(packs: controller.packs).matches(host: "selected.labroute.test"))
+    #expect(try ConfigurationStore(url: fixture.root.appendingPathComponent("configuration.json")).load()?.packs
+        .flatMap(\.routes).contains { $0.domain.value == "selected.labroute.test" } == false)
+}
+@Test @MainActor func labSetupImportAddsOnlyWhatIsMissing() throws {
+    let (fixtureA, a) = try fixture(), (fixtureB, b) = try fixture()
+    defer {
+        a.shutdownControl(); b.shutdownControl()
+        try? FileManager.default.removeItem(at: fixtureA.root); try? FileManager.default.removeItem(at: fixtureB.root)
+    }
+    #expect(a.execute(ControlRequest(command: "route.add", domain: "wiki.lab.example", pack: "internal")).success)
+    #expect(a.saveSSH(SSHIntegration(hosts: [SSHHostEntry(aliases: ["gerrit"], hostname: "gerrit.lab.example", user: "someone",
+        identityFile: "~/.ssh/id_gerrit", extraOptions: ["LocalForward 8080 localhost:80"])])))
+    let data = try a.labSetupData()
+    let text = String(decoding: data, as: UTF8.self)
+    for personal in ["fixture-key", "\"fixture\"", "someone", "id_gerrit", "LocalForward"] { #expect(!text.contains(personal)) }
+
+    let connection = b.configuredConnection
+    #expect(b.importLabSetup(data) && b.importLabSetup(data))
+    #expect(b.error == nil)
+    #expect(b.packs.first { $0.id == "internal" }?.routes.map(\.domain.value) == ["wiki.lab.example"])
+    #expect(b.sshIntegration.hosts.map(\.hostname) == ["gerrit.lab.example"])
+    #expect(b.sshIntegration.hosts.first?.user == "fixture" && b.sshIntegration.hosts.first?.extraOptions == [])
+    #expect(b.configuredConnection == connection)
+
+    let store = ConfigurationStore(url: fixtureB.root.appendingPathComponent("configuration.json"))
+    let saved = try store.load()
+    #expect(!b.importLabSetup(Data("{\"labroute\": 2}".utf8)))
+    #expect(b.error == LabSetupError.invalid.localizedDescription)
+    #expect(try store.load() == saved)
+}
 @Test @MainActor func quitWhileConnectedRestoresBeforeTerminating() async throws {
     let (fixture, controller) = try fixture()
     defer { controller.shutdownControl(); try? FileManager.default.removeItem(at: fixture.root) }

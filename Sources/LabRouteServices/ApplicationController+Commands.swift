@@ -149,9 +149,13 @@ import LabRouteCore
                 guard !busy, activeOperation == nil else { return failure(.busy, "An operation is in progress") }
                 error = nil
                 switch command {
-                case .routeAdd, .routeEnable, .routeDisable:
+                case .routeAdd, .routeEnable, .routeDisable, .routeRemove:
                     guard let domain = request.domain else { return failure(.invalidRequest, "A domain is required") }
-                    try saveRoutes(RouteEditing.apply(String(command.rawValue.dropFirst(6)), domain: domain, packID: request.pack ?? "custom", to: packs))
+                    do { try saveRoutes(RouteEditing.apply(String(command.rawValue.dropFirst(6)), domain: domain, packID: request.pack ?? "custom", to: packs)) }
+                    catch let error where error is DomainError || error is RouteEditError || error is RuntimeError {
+                        // Fixed, path-free messages: show the user what to change.
+                        return failure(.invalidRequest, error.localizedDescription)
+                    }
                 case .packSet:
                     guard let id = request.id, let enabled = request.enabled, packs.contains(where: { $0.id == id }) else { return failure(.invalidRequest, "Unknown pack or missing enabled value") }
                     setPackImpl(id, enabled: enabled)

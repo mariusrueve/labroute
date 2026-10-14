@@ -52,7 +52,7 @@ LabRoute starts `ssh -D` (a SOCKS proxy) to your lab server and serves a small p
 
 - Native Swift/SwiftUI, no dependencies, no background daemon, no kernel or network extension.
 - Uses the system `/usr/bin/ssh` with a dedicated encrypted key stored in your Keychain.
-- About 50 publisher domains (Elsevier/ScienceDirect, Springer Nature, Wiley, ACS, RSC, IEEE, ACM, APS, IOP, Taylor & Francis, SAGE, JSTOR, OUP, Cambridge, Science, PNAS, …) are built in. Toggle any of them, and add your own internal sites.
+- About 60 publisher domains (Elsevier/ScienceDirect, Springer Nature, Wiley, ACS, RSC, IEEE, ACM, APS, IOP, Taylor & Francis, SAGE, JSTOR, OUP, Cambridge, De Gruyter Brill, Science, PNAS, Cochrane, …) are built in. Toggle any of them, and add your own internal sites.
 - Disconnect (or Quit) restores your previous proxy settings exactly.
 
 ## Requirements
@@ -99,11 +99,13 @@ To update, quit LabRoute, then `git pull` and run `bash scripts/install.sh` agai
 5. Under **Network services** on the same tab, tick the connection you use (Wi-Fi and/or Ethernet).
 6. Add your internal sites on the **Domains** tab (e.g. `intranet.uni-example.de`). Subdomains are included automatically.
 
+**Sharing with your lab:** once you're set up, click **Export…** under *Lab setup file* on the **Connection** tab. The file holds the server, your own domains and your ssh hosts (no usernames, keys or extra ssh options). A colleague clicks **Import…** there, enters their own username and clicks **Set Up and Verify SSH**. Import only adds what is missing; it never changes existing entries.
+
 ## Daily use
 
 - Click the menu-bar icon → **Connect**. macOS asks for your admin password to change the proxy settings, and the Keychain may ask for the key passphrase.
 - When the icon shows a shield, you're connected. **Quit and reopen your browser once** (⌘Q). Browsers keep their existing connections to sites and won't route them through LabRoute until they restart. Then open papers and internal pages as usual.
-- You can add or toggle domains while connected. Reload the page; if the browser keeps using the old route, restart it.
+- You can add, toggle or remove domains while connected. Reload the page; if the browser keeps using the old route, restart it.
 - **Disconnect** restores your previous proxy settings. Quitting LabRoute in any way (⌘Q, the menu, logging out, shutting down) disconnects and restores them first.
 - Optional: *Settings → Launch at login* and *Connect automatically*.
 
@@ -113,6 +115,7 @@ A command-line client is bundled for scripting the running app. Homebrew puts it
 labroute status --json
 labroute connect --wait
 labroute route add intranet.uni-example.de
+labroute route remove intranet.uni-example.de
 labroute disconnect --wait
 labroute proxy --check host.uni-example.de   # exit 0 if ssh would use the tunnel now
 labroute env                                 # proxy variables for the shell, empty if the app isn't running
@@ -150,6 +153,7 @@ SSH sessions still end when the Mac sleeps long enough for the server to drop th
 - **"Network settings changed outside LabRoute"**: something else edited the proxy settings while you were connected. LabRoute won't overwrite them. Check System Settings → Network → Proxies and turn off *Automatic proxy configuration* if it still points to `http://127.0.0.1:…/proxy.pac`, then click Disconnect again.
 - **Page still paywalled**: restart the browser first. Publisher sites show your institution's name (e.g. "Access provided by …") when routing works. Old archive volumes may not be covered by your library's licence. Also check that the publisher's domain is enabled. Some sites load content or log-in from a second domain, which you can add under *Custom*. Then reload or restart Safari.
 - Check what macOS currently uses with `scutil --proxy`.
+- **Start from scratch**: Disconnect, quit LabRoute, delete `~/Library/Application Support/LabRoute/`, then open it again. This also removes the dedicated SSH key, so setup asks for your server password once more.
 
 ## Limitations
 

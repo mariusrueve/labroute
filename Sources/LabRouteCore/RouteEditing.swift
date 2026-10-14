@@ -1,11 +1,12 @@
 import Foundation
 
 public enum RouteEditError: Error, LocalizedError {
-    case unknownPack, unknownRoute, unsupportedCommand
+    case unknownPack, unknownRoute, builtIn, unsupportedCommand
     public var errorDescription: String? {
         switch self {
         case .unknownPack: "Choose Internal Resources or Custom for a new domain."
         case .unknownRoute: "No route matches that domain. Add it first."
+        case .builtIn: "Built-in domains can only be turned off."
         case .unsupportedCommand: "Unsupported route command."
         }
     }
@@ -36,6 +37,12 @@ public enum RouteEditing {
                 }
             }
             guard found else { throw RouteEditError.unknownRoute }
+        case "remove":
+            // Only domains the user added can be deleted; built-ins are toggled off instead.
+            let matching = result.flatMap(\.routes).filter { $0.domain == domain }
+            guard !matching.isEmpty else { throw RouteEditError.unknownRoute }
+            guard matching.contains(where: { $0.source == .custom }) else { throw RouteEditError.builtIn }
+            for p in result.indices { result[p].routes.removeAll { $0.domain == domain && $0.source == .custom } }
         default: throw RouteEditError.unsupportedCommand
         }
         return result
