@@ -85,8 +85,10 @@ private final class StabilizationPreferences: ProxyPreferences {
     #expect(socketpair(AF_UNIX, SOCK_STREAM, 0, &descriptors) == 0)
     let reader = descriptors[0], writer = descriptors[1]
     defer { Darwin.close(reader); Darwin.close(writer) }
+    // Bytes keep trickling for 600 ms. A per-read deadline would wait all of that;
+    // the frame deadline gives up after 60 ms, with headroom for slow CI runners.
     let task = Task.detached {
-        for _ in 0..<10 {
+        for _ in 0..<30 {
             var byte: UInt8 = 32
             _ = Darwin.write(writer, &byte, 1)
             try await Task.sleep(for: .milliseconds(20))
@@ -96,7 +98,7 @@ private final class StabilizationPreferences: ProxyPreferences {
     await #expect(throws: (any Error).self) {
         try await Task.detached { try LocalSocket.receive(reader, timeout: .milliseconds(60)) }.value
     }
-    #expect(ContinuousClock.now - start < .milliseconds(150))
+    #expect(ContinuousClock.now - start < .milliseconds(300))
     task.cancel(); _ = try? await task.value
 }
 
